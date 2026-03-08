@@ -34,4 +34,4 @@ jobs:
               "refresh_token": "${{ secrets.GDRIVE_REFRESH_TOKEN }}"
             }
           filename: "backup.tar.gz"
-          folderId: ""
+          folderId: "1uF76YzP_Y1A7xZ_C_mVkrDnATBJqztlV"
