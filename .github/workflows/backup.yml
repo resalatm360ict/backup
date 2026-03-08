@@ -10,29 +10,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Install MongoDB Tools
+      - name: Install MongoDB Database Tools
         run: |
           wget https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-100.9.4.tgz
           tar -xzf mongodb-database-tools-ubuntu2204-x86_64-100.9.4.tgz
           sudo cp mongodb-database-tools-ubuntu2204-x86_64-100.9.4/bin/* /usr/local/bin/
 
-      - name: Create backup
+      - name: Create MongoDB Backup
         run: |
           DATE=$(date +"%Y-%m-%d")
           mongodump --uri="${{ secrets.MONGO_URI }}" --archive=backup-$DATE.gz --gzip
           echo "BACKUP_FILE=backup-$DATE.gz" >> $GITHUB_ENV
 
-      - name: Upload to Google Drive
+      - name: Verify Backup File
+        run: |
+          ls -lh
+
+      - name: Upload Backup to Google Drive
         uses: adityak74/google-drive-upload-git-action@main
         with:
-          credentials: |
-            {
-              "client_id": "${{ secrets.GDRIVE_CLIENT_ID }}",
-              "client_secret": "${{ secrets.GDRIVE_CLIENT_SECRET }}",
-              "refresh_token": "${{ secrets.GDRIVE_REFRESH_TOKEN }}"
-            }
+          credentials: ${{ secrets.GDRIVE_CREDENTIALS }}
           filename: ${{ env.BACKUP_FILE }}
           folderId: "1uF76YzP_Y1A7xZ_C_mVkrDnATBJqztlV"
