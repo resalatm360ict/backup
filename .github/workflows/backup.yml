@@ -13,16 +13,18 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Install MongoDB tools
+      - name: Install MongoDB Database Tools
         run: |
-          sudo apt-get update
-          sudo apt-get install -y mongodb-clients
+          wget https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2404-x86_64-latest.tgz
+          tar -xzf mongodb-database-tools-ubuntu2404-x86_64-latest.tgz
+          sudo cp mongodb-database-tools-*/bin/* /usr/local/bin/
 
       - name: Create backup
         run: |
+          DATE=$(date +"%Y-%m-%d")
           mkdir backup
           mongodump --uri="${{ secrets.MONGO_URI }}" --out=backup
-          tar -czf backup.tar.gz backup
+          tar -czf backup-$DATE.tar.gz backup
 
       - name: Upload to Google Drive
         uses: adityak74/google-drive-upload-git-action@main
@@ -33,5 +35,5 @@ jobs:
               "client_secret": "${{ secrets.GDRIVE_CLIENT_SECRET }}",
               "refresh_token": "${{ secrets.GDRIVE_REFRESH_TOKEN }}"
             }
-          filename: "backup.tar.gz"
+          filename: "backup-$(date +'%Y-%m-%d').tar.gz"
           folderId: "1uF76YzP_Y1A7xZ_C_mVkrDnATBJqztlV"
