@@ -22,6 +22,7 @@ jobs:
       - name: Create MongoDB Backup
         run: |
           DATE=$(date +"%Y-%m-%d")
+          BACKUP_FILE=backup-$DATE.gz
           mongodump --uri="${{ secrets.MONGO_URI }}" --archive=backup-$DATE.gz --gzip
           echo "BACKUP_FILE=backup-$DATE.gz" >> $GITHUB_ENV
 
