@@ -1,0 +1,37 @@
+name: MongoDB Backup to Google Drive
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install MongoDB tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mongodb-clients
+
+      - name: Create backup
+        run: |
+          mkdir backup
+          mongodump --uri="${{ secrets.MONGO_URI }}" --out=backup
+          tar -czf backup.tar.gz backup
+
+      - name: Upload to Google Drive
+        uses: adityak74/google-drive-upload-git-action@main
+        with:
+          credentials: |
+            {
+              "client_id": "${{ secrets.GDRIVE_CLIENT_ID }}",
+              "client_secret": "${{ secrets.GDRIVE_CLIENT_SECRET }}",
+              "refresh_token": "${{ secrets.GDRIVE_REFRESH_TOKEN }}"
+            }
+          filename: "backup.tar.gz"
+          folderId: ""
