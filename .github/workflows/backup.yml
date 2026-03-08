@@ -23,7 +23,7 @@ jobs:
         run: |
           DATE=$(date +"%Y-%m-%d")
           mkdir backup
-          mongodump --uri="${{ secrets.MONGO_URI }}" --out=backup
+          mongodump --uri="${{ secrets.MONGO_URI }}" --archive=backup.gz --gzip
           tar -czf backup-$DATE.tar.gz backup
 
       - name: Upload to Google Drive
