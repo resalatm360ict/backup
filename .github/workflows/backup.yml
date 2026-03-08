@@ -1,41 +1,28 @@
-name: MongoDB Backup to Google Drive
-
+name: Daily Mongo Backup
 on:
   schedule:
-    - cron: "0 2 * * *" # daily 2AM
-  workflow_dispatch:
+    - cron: '0 0 * * *' # Every night at midnight
+  workflow_dispatch:     # Allows you to click a button to run it manually
 
 jobs:
   backup:
     runs-on: ubuntu-latest
-
     steps:
-      # Checkout repository (optional, if needed)
-      - uses: actions/checkout@v3
-
-      # Install MongoDB Database Tools
-      - name: Install MongoDB Tools
+      - name: Install Tools
         run: |
-          wget https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-100.9.4.tgz
-          tar -xzf mongodb-database-tools-ubuntu2204-x86_64-100.9.4.tgz
-          sudo cp mongodb-database-tools-ubuntu2204-x86_64-100.9.4/bin/* /usr/local/bin/
+          sudo curl https://rclone.org/install.sh | sudo bash
+          wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+          sudo apt-get update
+          sudo apt-get install -y mongodb-database-tools
 
-      # Create MongoDB backup
-      - name: Create Backup
+      - name: Setup Credentials
         run: |
-          DATE=$(date +"%Y-%m-%d")
-          BACKUP_FILE=backup-$DATE.gz
-          mongodump --uri="${{ secrets.MONGO_URI }}" --archive=$BACKUP_FILE --gzip
-          echo "BACKUP_FILE=$BACKUP_FILE" >> $GITHUB_ENV
+          mkdir -p ~/.config/rclone
+          echo "${{ secrets.RCLONE_CONF }}" > ~/.config/rclone/rclone.conf
 
-      # Verify backup exists
-      - name: List backup
-        run: ls -lh
-
-      # Upload to Google Drive using Service Account
-      - name: Upload Backup to Google Drive
-        uses: adityak74/google-drive-upload-git-action@main
-        with:
-          credentials: ${{ secrets.GDRIVE_CREDENTIALS }}
-          filename: ${{ env.BACKUP_FILE }}
-          folderId: "1uF76YzP_Y1A7xZ_C_mVkrDnATBJqztlV"
+      - name: Run Backup
+        run: |
+          FILENAME="backup-$(date +%Y-%m-%d).gz"
+          mongodump --uri="${{ secrets.MONGODB_URI }}" --archive="$FILENAME" --gzip
+          rclone copy "$FILENAME" gdrive:MongoDB_Backups
