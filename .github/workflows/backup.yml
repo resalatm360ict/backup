@@ -2,7 +2,7 @@ name: MongoDB Backup to Google Drive
 
 on:
   schedule:
-    - cron: "0 2 * * *"
+    - cron: "0 2 * * *" # daily 2AM
   workflow_dispatch:
 
 jobs:
@@ -10,26 +10,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      # Checkout repository (optional, if needed)
+      - uses: actions/checkout@v3
 
-      - name: Install MongoDB Database Tools
+      # Install MongoDB Database Tools
+      - name: Install MongoDB Tools
         run: |
           wget https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-100.9.4.tgz
           tar -xzf mongodb-database-tools-ubuntu2204-x86_64-100.9.4.tgz
           sudo cp mongodb-database-tools-ubuntu2204-x86_64-100.9.4/bin/* /usr/local/bin/
 
-      - name: Create MongoDB Backup
+      # Create MongoDB backup
+      - name: Create Backup
         run: |
           DATE=$(date +"%Y-%m-%d")
           BACKUP_FILE=backup-$DATE.gz
-          mongodump --uri="${{ secrets.MONGO_URI }}" --archive=backup-$DATE.gz --gzip
-          echo "BACKUP_FILE=backup-$DATE.gz" >> $GITHUB_ENV
+          mongodump --uri="${{ secrets.MONGO_URI }}" --archive=$BACKUP_FILE --gzip
+          echo "BACKUP_FILE=$BACKUP_FILE" >> $GITHUB_ENV
 
-      - name: Verify Backup File
-        run: |
-          ls -lh
+      # Verify backup exists
+      - name: List backup
+        run: ls -lh
 
+      # Upload to Google Drive using Service Account
       - name: Upload Backup to Google Drive
         uses: adityak74/google-drive-upload-git-action@main
         with:
