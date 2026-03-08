@@ -15,16 +15,14 @@ jobs:
 
       - name: Install MongoDB Database Tools
         run: |
-          wget https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2404-x86_64-latest.tgz
-          tar -xzf mongodb-database-tools-ubuntu2404-x86_64-latest.tgz
-          sudo cp mongodb-database-tools-*/bin/* /usr/local/bin/
+          wget https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-100.9.4.tgz
+          tar -xzf mongodb-database-tools-ubuntu2204-x86_64-100.9.4.tgz
+          sudo cp mongodb-database-tools-ubuntu2204-x86_64-100.9.4/bin/* /usr/local/bin/
 
       - name: Create backup
         run: |
           DATE=$(date +"%Y-%m-%d")
-          mkdir backup
-          mongodump --uri="${{ secrets.MONGO_URI }}" --archive=backup.gz --gzip
-          tar -czf backup-$DATE.tar.gz backup
+          mongodump --uri="${{ secrets.MONGO_URI }}" --archive=backup-$DATE.gz --gzip
 
       - name: Upload to Google Drive
         uses: adityak74/google-drive-upload-git-action@main
@@ -35,5 +33,5 @@ jobs:
               "client_secret": "${{ secrets.GDRIVE_CLIENT_SECRET }}",
               "refresh_token": "${{ secrets.GDRIVE_REFRESH_TOKEN }}"
             }
-          filename: "backup-$(date +'%Y-%m-%d').tar.gz"
+          filename: "backup-$(date +'%Y-%m-%d').gz"
           folderId: "1uF76YzP_Y1A7xZ_C_mVkrDnATBJqztlV"
