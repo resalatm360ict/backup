@@ -20,7 +20,7 @@ jobs:
           echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
           sudo apt-get update
           sudo apt-get install -y mongodb-database-tools
-
+    
       - name: Configure rclone
         run: |
           mkdir -p ~/.config/rclone
@@ -36,4 +36,4 @@ jobs:
           mongodump --uri="${{ secrets.MONGO_URI }}" --archive="$FILENAME" --gzip
           
           # Upload to Google Drive
-          rclone copy "$FILENAME" resalat:MongoDB_Backups
+          rclone copy "$FILENAME" resalat:MongoDB_Backups --progress
