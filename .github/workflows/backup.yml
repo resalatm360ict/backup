@@ -16,10 +16,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y mongodb-database-tools
 
-      - name: Setup Credentials
+      - name: Create service account file
+        run: echo '${{ secrets.GDRIVE_SERVICE_ACCOUNT }}' > service-account.json
+
+      - name: Configure rclone
         run: |
           mkdir -p ~/.config/rclone
-          echo "${{ secrets.RCLONE_CONF }}" > ~/.config/rclone/rclone.conf
+          echo '${{ secrets.RCLONE_CONFIG }}' > ~/.config/rclone/rclone.conf
 
       - name: Run Backup
         run: |
