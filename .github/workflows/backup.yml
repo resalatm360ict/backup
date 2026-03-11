@@ -25,7 +25,7 @@ jobs:
         run: |
           mkdir -p ~/.config/rclone
           # Write RCLONE_CONFIG secret directly to rclone.conf
-          echo "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
+          echo '${{ secrets.RCLONE_CONFIG }}' > ~/.config/rclone/rclone.conf
 
       - name: Run Backup
         run: |
