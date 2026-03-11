@@ -1,71 +1,39 @@
 name: Daily Mongo Backup
+
 on:
   schedule:
     - cron: '0 0 * * *' # Every night at midnight
-  workflow_dispatch: # Allows manual runs
+  workflow_dispatch:
 
 jobs:
   backup:
     runs-on: ubuntu-latest
+
     steps:
-      # Step 1: Install rclone and MongoDB tools
       - name: Install Tools
         run: |
           # Install rclone
           curl https://rclone.org/install.sh | sudo bash
-          # Add MongoDB repo key and source
+          
+          # Add MongoDB repo and install tools
           wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
           echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
           sudo apt-get update
           sudo apt-get install -y mongodb-database-tools
 
-      # Step 2: Configure rclone using the secret
       - name: Configure rclone
         run: |
           mkdir -p ~/.config/rclone
+          # Write RCLONE_CONFIG secret directly to rclone.conf
           echo "${{ secrets.RCLONE_CONFIG }}" > ~/.config/rclone/rclone.conf
 
-      # Step 3: Run MongoDB backup and upload to Google Drive
       - name: Run Backup
         run: |
-          # Create backup filename with date
+          # Create backup filename with current date
           FILENAME="backup-$(date +%Y-%m-%d).gz"
-
-          # Dump MongoDB to gzip archive
+          
+          # Dump MongoDB
           mongodump --uri="${{ secrets.MONGO_URI }}" --archive="$FILENAME" --gzip
-
-          # Copy backup to Google Drive remote
+          
+          # Upload to Google Drive
           rclone copy "$FILENAME" resalat:MongoDB_Backups
-
-
-# name: Daily Mongo Backup
-# on:
-#   schedule:
-#     - cron: '0 0 * * *' # Every night at midnight
-#   workflow_dispatch:     # Allows you to click a button to run it manually
-
-# jobs:
-#   backup:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Install Tools
-#         run: |
-#           sudo curl https://rclone.org/install.sh | sudo bash
-#           wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
-#           echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
-#           sudo apt-get update
-#           sudo apt-get install -y mongodb-database-tools
-
-#       - name: Create service account file
-#         run: echo '${{ secrets.GDRIVE_SERVICE_ACCOUNT }}' > service-account.json
-
-#       - name: Configure rclone
-#         run: |
-#           mkdir -p ~/.config/rclone
-#           echo '${{ secrets.RCLONE_CONFIG }}' > ~/.config/rclone/rclone.conf
-
-#       - name: Run Backup
-#         run: |
-#           FILENAME="backup-$(date +%Y-%m-%d).gz"
-#           mongodump --uri="${{ secrets.MONGO_URI }}" --archive="$FILENAME" --gzip
-#           rclone copy "$FILENAME" gdrive:MongoDB_Backups
