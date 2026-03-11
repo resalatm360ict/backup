@@ -2,7 +2,7 @@ name: Daily Mongo Backup
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Every night at midnight
+    - cron: '0 0 * * *'   # Runs every day at 00:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -10,30 +10,97 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # -----------------------------
+      # Install Required Tools
+      # -----------------------------
       - name: Install Tools
         run: |
           # Install rclone
           curl https://rclone.org/install.sh | sudo bash
-          
-          # Add MongoDB repo and install tools
+
+          # Install MongoDB Database Tools
           wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
           echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
           sudo apt-get update
-          sudo apt-get install -y mongodb-database-tools
-    
+          sudo apt-get install -y mongodb-database-tools zip
+
+      # -----------------------------
+      # Configure rclone (Google Drive)
+      # -----------------------------
       - name: Configure rclone
         run: |
           mkdir -p ~/.config/rclone
-          # Write RCLONE_CONFIG secret directly to rclone.conf
           echo '${{ secrets.RCLONE_CONFIG }}' > ~/.config/rclone/rclone.conf
 
-      - name: Run Backup
+      # -----------------------------
+      # MongoDB Backup (Collection Wise)
+      # -----------------------------
+      - name: Run MongoDB Backup
         run: |
-          # Create backup filename with current date
-          FILENAME="backup-$(date +%Y-%m-%d).gz"
+          DATE=$(date +%Y-%m-%d)
+          DB_NAME="sample_mflix"
+          BACKUP_DIR="mongo-backup-$DATE"
+
+          echo "Creating backup directory..."
+          mkdir -p $BACKUP_DIR
+
+          echo "Dumping MongoDB collections..."
+
+          mongodump \
+            --uri="${{ secrets.MONGO_URI }}" \
+            --db=$DB_NAME \
+            --gzip \
+            --out=$BACKUP_DIR
+
+          echo "Creating ZIP archive..."
+          zip -r backup-$DATE.zip $BACKUP_DIR
+
+          echo "Uploading backup to Google Drive..."
+          rclone copy backup-$DATE.zip resalat:MongoDB_Backups --progress
+
+          echo "Cleaning local files..."
+          rm -rf $BACKUP_DIR
+          rm backup-$DATE.zip
+
+          echo "Backup completed successfully ✅"
+
+
+# name: Daily Mongo Backup
+
+# on:
+#   schedule:
+#     - cron: '0 0 * * *' # Every night at midnight
+#   workflow_dispatch:
+
+# jobs:
+#   backup:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Install Tools
+#         run: |
+#           # Install rclone
+#           curl https://rclone.org/install.sh | sudo bash
           
-          # Dump MongoDB
-          mongodump --uri="${{ secrets.MONGO_URI }}" --archive="$FILENAME" --gzip
+#           # Add MongoDB repo and install tools
+#           wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
+#           echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+#           sudo apt-get update
+#           sudo apt-get install -y mongodb-database-tools
+    
+#       - name: Configure rclone
+#         run: |
+#           mkdir -p ~/.config/rclone
+#           # Write RCLONE_CONFIG secret directly to rclone.conf
+#           echo '${{ secrets.RCLONE_CONFIG }}' > ~/.config/rclone/rclone.conf
+
+#       - name: Run Backup
+#         run: |
+#           # Create backup filename with current date
+#           FILENAME="backup-$(date +%Y-%m-%d).gz"
           
-          # Upload to Google Drive
-          rclone copy "$FILENAME" resalat:MongoDB_Backups --progress
+#           # Dump MongoDB
+#           mongodump --uri="${{ secrets.MONGO_URI }}" --archive="$FILENAME" --gzip
+          
+#           # Upload to Google Drive
+#           rclone copy "$FILENAME" resalat:MongoDB_Backups --progress
