@@ -38,7 +38,7 @@ jobs:
       - name: Run MongoDB Backup
         run: |
           DATE=$(date +%Y-%m-%d)
-          DB_NAME="sample_mflix"
+          DB_NAME="mctl"
           BACKUP_DIR="mongo-backup-$DATE"
 
           echo "Creating backup directory..."
